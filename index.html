@@ -1,0 +1,197 @@
+<!DOCTYPE HTML>
+<html>
+    <head>
+        <meta charset="utf-8">
+    </head>
+    <body>
+        <h1>PLATSER API</h1>
+        <div class="content">
+            <div class="content-block">
+                <a onclick="oauthSignIn()">Logga in</a>
+                <button onclick="getMe()">Hämta min användarinfo</button>
+            </div>
+            <div class="content-block">
+                <input autofocus type="text" id="story-search">
+                <button onclick="getStories()">Sök berättelser</button>
+            </div>
+            <div class="content-block">
+                <input type="text" id="place-search">
+                <button onclick="getPlaces()">Sök platser</button>
+            </div>
+
+            <h2>Uppdatera din biografi</h2>
+            <form>
+                <textarea id="biography" rows="5" type="text" name=""></textarea>
+            </form>
+            <button id="save" onclick="updateBio()">Spara</button>
+
+            <pre id="res"></pre>
+        </div>
+
+        <script>
+
+            // Scope variables
+            let accessToken;
+            let currentUser;
+
+            // Take care of access token, if it exists
+            let params = window.location.href.split('access_token=');
+            if (params && params[1]) {
+                accessToken = params[1].split('&')[0];
+            }
+
+            // Example code from Google
+            oauthSignIn = () => {
+                // Google's OAuth 2.0 endpoint for requesting an access token
+                var oauth2Endpoint = 'https://accounts.google.com/o/oauth2/v2/auth';
+
+                // Create <form> element to submit parameters to OAuth 2.0 endpoint.
+                var form = document.createElement('form');
+                form.setAttribute('method', 'GET'); // Send as a GET request.
+                form.setAttribute('action', oauth2Endpoint);
+
+                // Parameters to pass to OAuth 2.0 endpoint.
+                var params = {'client_id': '[YOUR CLIENT ID]',
+                                'redirect_uri': '[YOUR REDIRECT URI]',
+                                'response_type': 'token',
+                                'scope': 'openid profile email',
+                                'include_granted_scopes': 'true',
+                                'state': 'pass-through value'};
+
+                // Add form parameters as hidden input values.
+                for (var p in params) {
+                    var input = document.createElement('input');
+                    input.setAttribute('type', 'hidden');
+                    input.setAttribute('name', p);
+                    input.setAttribute('value', params[p]);
+                    form.appendChild(input);
+                }
+
+                // Add form to page and submit it to open the OAuth 2.0 endpoint.
+                document.body.appendChild(form);
+                form.submit();
+            }
+
+            // Generic http get method
+            get = (url, callback) => {
+
+                var xhttp = new XMLHttpRequest();
+                xhttp.onreadystatechange = function() {
+                    if (this.readyState == 4 && this.status == 200) {
+                        document.querySelector("#res").innerHTML = JSON.stringify(JSON.parse(xhttp.responseText), undefined, 2);
+                        if (callback) {
+                            callback(JSON.parse(xhttp.responseText));
+                        }
+                    }
+                };
+                
+                xhttp.open("GET", "https://svc.raa.se/platser/" + url, true);
+                xhttp.setRequestHeader('Authorization', 'Bearer ' + accessToken);
+                xhttp.send();
+            }
+
+            // Generic http post method
+            put = (url, data, callback) => {
+
+                var xhttp = new XMLHttpRequest();
+                xhttp.onreadystatechange = function() {
+                    if (callback && this.readyState == 4 && this.status == 200) {
+                        callback(JSON.parse(xhttp.responseText));
+                    }
+                };
+                
+                xhttp.open("PUT", "https://svc.raa.se/platser/" + url, true);
+                xhttp.setRequestHeader('Authorization', 'Bearer ' + accessToken);
+                xhttp.setRequestHeader('Content-type', 'application/json')
+                xhttp.send(JSON.stringify(data));
+            }
+
+            // Get info about the logged in Platser user
+            getMe = () => {
+                get("me", (user) => {
+                    currentUser = user;
+                    document.querySelector("#biography").value = user.biography;
+                });
+            }
+
+            // Search for stories
+            getStories = () => {
+                get("stories/" + document.querySelector("#story-search").value);
+            }
+
+            // Search for places
+            getPlaces = () => {
+                get("places?name=" + document.querySelector("#place-search").value);
+            }
+
+            // Update the logged in users biography
+            updateBio = () => {
+                currentUser.biography = document.querySelector("#biography").value;
+                put('user/' + currentUser.username, currentUser, () => {
+                    document.querySelector("#res").innerHTML = 'Din biografi är nu uppdaterad!';
+                })
+            }
+
+            // Upon init, get the user if access token exists
+            if (accessToken) {
+                getMe();
+            }
+
+
+        </script>
+
+        <style>
+
+            body {
+                font-family: sans-serif;
+                margin: 0;
+                padding: 1rem;
+            }
+
+            a, button, input {
+                display: inline-block;
+                width: 300px;
+                padding: 10px;
+                margin: 5px;
+                box-sizing: border-box;
+                border: 1px solid orangered;
+                border-radius: 2px;
+                text-align: center;
+            }
+
+            h1 {
+                width: 640px;
+                text-align: center;
+            }
+
+            h2 {
+                padding-top: 2rem;
+                font-size: 20px;
+            }
+
+            a, button, h1, h2 {
+                color: orangered;
+                font-size: bolder;
+            }
+
+            button:hover {
+                cursor: pointer;
+            }
+
+            .content-block {
+                margin-top: 1rem;
+            }
+
+            textarea {
+                box-sizing: border-box;
+                width: 300px;
+                padding: 0.5rem;
+            }
+
+            #save {
+                margin: 1rem 0;
+            }
+
+        </style>
+    </body>
+</html>
