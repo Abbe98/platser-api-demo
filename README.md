@@ -2,7 +2,7 @@
 En liten webbapplikation som använder sig av Platsers API, samt OAuth via Google för autentisering.
 
 Dokumentation för Platsers API
-https://platser.raa.se/id/api
+https://platser.raa.se/id/home/api
 
 Adress till API:et
 https://svc.raa.se/platser
